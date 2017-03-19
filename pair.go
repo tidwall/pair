@@ -1,6 +1,7 @@
 package pair
 
 import (
+	"encoding/binary"
 	"reflect"
 	"unsafe"
 )
@@ -37,16 +38,16 @@ func New(key, value string) Pair {
 	slice[1] = vhdr
 	if khdrsize > 0 {
 		if khdrsize == 2 {
-			*(*uint16)(unsafe.Pointer(&slice[2])) = uint16(len(key))
+			binary.LittleEndian.PutUint16(slice[2:], uint16(len(key)))
 		} else {
-			*(*uint32)(unsafe.Pointer(&slice[2])) = uint32(len(key))
+			binary.LittleEndian.PutUint32(slice[2:], uint32(len(key)))
 		}
 	}
 	if vhdrsize > 0 {
 		if vhdrsize == 2 {
-			*(*uint16)(unsafe.Pointer(&slice[2+khdrsize])) = uint16(len(value))
+			binary.LittleEndian.PutUint16(slice[2+khdrsize:], uint16(len(value)))
 		} else {
-			*(*uint32)(unsafe.Pointer(&slice[2+khdrsize])) = uint32(len(value))
+			binary.LittleEndian.PutUint32(slice[2+khdrsize:], uint32(len(value)))
 		}
 	}
 	copy(slice[2+khdrsize+vhdrsize:], key)
@@ -87,9 +88,9 @@ func (pair Pair) get(what int) (string, int) {
 	if khdrsize == 0 {
 		ksize = int(khdr)
 	} else if khdrsize == 2 {
-		ksize = int(*(*uint16)(unsafe.Pointer(&slice[2])))
+		ksize = int(binary.LittleEndian.Uint16(slice[2:]))
 	} else {
-		ksize = int(*(*uint32)(unsafe.Pointer(&slice[2])))
+		ksize = int(binary.LittleEndian.Uint32(slice[2:]))
 	}
 	kstart := 2 + khdrsize + vhdrsize
 	if what == key {
@@ -99,9 +100,9 @@ func (pair Pair) get(what int) (string, int) {
 	if vhdrsize == 0 {
 		vsize = int(vhdr)
 	} else if vhdrsize == 2 {
-		vsize = int(*(*uint16)(unsafe.Pointer(&slice[2+khdrsize])))
+		vsize = int(binary.LittleEndian.Uint16(slice[2+khdrsize:]))
 	} else {
-		vsize = int(*(*uint32)(unsafe.Pointer(&slice[2+khdrsize])))
+		vsize = int(binary.LittleEndian.Uint32(slice[2+khdrsize:]))
 	}
 	vstart := kstart + ksize
 	if what == value {
