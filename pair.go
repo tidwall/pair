@@ -8,11 +8,11 @@ import (
 
 // Pair is a tightly packed key/value pair
 type Pair struct {
-	data uintptr
+	data unsafe.Pointer
 }
 
 // New returns a Pair
-func New(key, value string) Pair {
+func New(key, value []byte) Pair {
 	var khdr, vhdr byte
 	var khdrsize, vhdrsize int
 	if len(key) <= 0xFD {
@@ -31,7 +31,7 @@ func New(key, value string) Pair {
 	} else if len(value) <= 0x7FFFFFFF {
 		vhdr, vhdrsize = 0xFF, 4
 	} else {
-		panic("key is too large")
+		panic("value is too large")
 	}
 	slice := makenz(2 + khdrsize + vhdrsize + len(key) + len(value))
 	slice[0] = khdr
@@ -52,7 +52,7 @@ func New(key, value string) Pair {
 	}
 	copy(slice[2+khdrsize+vhdrsize:], key)
 	copy(slice[2+khdrsize+vhdrsize+len(key):], value)
-	return Pair{uintptr(unsafe.Pointer(&slice[0]))}
+	return Pair{unsafe.Pointer(&slice[0])}
 }
 
 const (
@@ -62,15 +62,16 @@ const (
 )
 
 var alignSize = int(unsafe.Sizeof(uintptr(0)))
+var maxInt = int(^uint(0) >> 1)
 
-func (pair Pair) get(what int) (string, int) {
-	if pair.data == 0 {
-		return "", 0
+func (pair Pair) get(what int) ([]byte, int) {
+	if uintptr(pair.data) == 0 {
+		return nil, 0
 	}
 	slice := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{
-		Data: pair.data,
-		Len:  int(^uint(0) >> 1),
-		Cap:  int(^uint(0) >> 1),
+		Data: uintptr(pair.data),
+		Len:  maxInt,
+		Cap:  maxInt,
 	}))
 	khdr, vhdr := slice[0], slice[1]
 	var khdrsize, vhdrsize int
@@ -94,8 +95,8 @@ func (pair Pair) get(what int) (string, int) {
 	}
 	kstart := 2 + khdrsize + vhdrsize
 	if what == key {
-		slice = slice[kstart : kstart+ksize]
-		return *(*string)(unsafe.Pointer(&slice)), 0
+		slice = slice[kstart : kstart+ksize : kstart+ksize]
+		return slice, 0
 	}
 	if vhdrsize == 0 {
 		vsize = int(vhdr)
@@ -106,24 +107,24 @@ func (pair Pair) get(what int) (string, int) {
 	}
 	vstart := kstart + ksize
 	if what == value {
-		slice = slice[vstart : vstart+vsize]
-		return *(*string)(unsafe.Pointer(&slice)), 0
+		slice = slice[vstart : vstart+vsize : vstart+vsize]
+		return slice, 0
 	}
 	sz := vstart + vsize
 	if sz%alignSize != 0 {
 		sz += alignSize - (sz % alignSize)
 	}
-	return "", sz
+	return nil, sz
 }
 
 // Key returns the key portion of the key
-func (pair *Pair) Key() string {
+func (pair *Pair) Key() []byte {
 	s, _ := pair.get(key)
 	return s
 }
 
 // Value returns the value
-func (pair *Pair) Value() string {
+func (pair *Pair) Value() []byte {
 	s, _ := pair.get(value)
 	return s
 }
@@ -132,6 +133,11 @@ func (pair *Pair) Value() string {
 func (pair *Pair) Size() int {
 	_, i := pair.get(size)
 	return i
+}
+
+// Zero return true if the pair is unallocated
+func (pair *Pair) Zero() bool {
+	return uintptr(pair.data) == 0
 }
 
 //go:linkname mallocgc runtime.mallocgc

@@ -2,6 +2,7 @@ package pair
 
 import (
 	"math/rand"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -9,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func hdrSize(s string) int {
+func hdrSize(s []byte) int {
 	if len(s) <= 0xFD {
 		return 1
 	} else if len(s) <= 0xFFFF {
@@ -32,51 +33,88 @@ func expectedSizeForPair(pair Pair) int {
 
 func TestBasic(t *testing.T) {
 	mallocgc(10, 0, false)
-	item := New("hello", "world")
-	assert.Equal(t, "hello", item.Key())
-	assert.Equal(t, "world", item.Value())
+	item := New([]byte("hello"), []byte("world"))
+	assert.Equal(t, "hello", string(item.Key()))
+	assert.Equal(t, "world", string(item.Value()))
 	assert.Equal(t, expectedSizeForPair(item), item.Size())
-	item = New("", "world")
-	assert.Equal(t, "", item.Key())
-	assert.Equal(t, "world", item.Value())
+	item = New([]byte(""), []byte("world"))
+	assert.Equal(t, "", string(item.Key()))
+	assert.Equal(t, "world", string(item.Value()))
 	assert.Equal(t, expectedSizeForPair(item), item.Size())
-	item = New("", "")
-	assert.Equal(t, "", item.Key())
-	assert.Equal(t, "", item.Value())
+	item = New([]byte(""), nil)
+	assert.Equal(t, "", string(item.Key()))
+	assert.Equal(t, "", string(item.Value()))
 	assert.Equal(t, expectedSizeForPair(item), item.Size())
 }
 
 func TestRandom(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
+	var items []Pair
+	var keys []string
+	var values []string
+	var sizes []int
 	for i := 0; i < 100000; i++ {
 		key := make([]byte, rand.Int()%300)
-		//value := make([]byte, rand.Int()%300+(0xFFFF-150))
-		value := make([]byte, rand.Int()%300)
 		rand.Read(key)
+		keys = append(keys, string(key))
+		value := make([]byte, rand.Int()%300)
 		rand.Read(value)
-		item := New(string(key), string(value))
+		values = append(values, string(value))
+		item := New([]byte(keys[i]), []byte(values[i]))
+		items = append(items, item)
+		sizes = append(sizes, item.Size())
 		ikey := item.Key()
 		ivalue := item.Value()
-		assert.Equal(t, ikey, string(key))
-		assert.Equal(t, ivalue, string(value))
+		assert.Equal(t, string(key), string(ikey))
+		assert.Equal(t, string(value), string(ivalue))
 		assert.Equal(t, expectedSizeForPair(item), item.Size())
 	}
+	// check for memory span errors
+	var ikeys [][]byte
+	var ivalues [][]byte
+	runtime.GC()
+	for i := 0; i < len(items); i++ {
+		item := items[i]
+		key := keys[i]
+		value := values[i]
+		ikey := item.Key()
+		ikeys = append(ikeys, ikey)
+		ivalue := item.Value()
+		ivalues = append(ivalues, ivalue)
+		assert.Equal(t, string(key), string(ikey))
+		assert.Equal(t, string(value), string(ivalue))
+		assert.Equal(t, expectedSizeForPair(item), item.Size())
+	}
+	items = nil
+	// check for memory span errors
+	runtime.GC()
+	for i := 0; i < len(items); i++ {
+		key := keys[i]
+		value := values[i]
+		ikey := ikeys[i]
+		ivalue := ivalues[i]
+		assert.Equal(t, string(key), string(ikey))
+		assert.Equal(t, string(value), string(ivalue))
+		assert.Equal(t, key, ikey)
+		assert.Equal(t, value, ivalue)
+	}
+	// larger items
 	for i := 0; i < 10000; i++ {
 		key := make([]byte, rand.Int()%300+(0xFFFF-150))
 		value := make([]byte, rand.Int()%300+(0xFFFF-150))
 		rand.Read(key)
 		rand.Read(value)
-		item := New(string(key), string(value))
+		item := New(key, value)
 		ikey := item.Key()
 		ivalue := item.Value()
-		assert.Equal(t, ikey, string(key))
-		assert.Equal(t, ivalue, string(value))
+		assert.Equal(t, string(key), string(ikey))
+		assert.Equal(t, string(value), string(ivalue))
 		assert.Equal(t, expectedSizeForPair(item), item.Size())
 	}
 }
 
 func BenchmarkNew2(t *testing.B) {
-	s := strings.Repeat("*", 1)
+	s := []byte(strings.Repeat("*", 1))
 	t.ReportAllocs()
 	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
@@ -84,7 +122,7 @@ func BenchmarkNew2(t *testing.B) {
 	}
 }
 func BenchmarkNew6(t *testing.B) {
-	s := strings.Repeat("*", 3)
+	s := []byte(strings.Repeat("*", 3))
 	t.ReportAllocs()
 	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
@@ -92,7 +130,7 @@ func BenchmarkNew6(t *testing.B) {
 	}
 }
 func BenchmarkNew14(t *testing.B) {
-	s := strings.Repeat("*", 7)
+	s := []byte(strings.Repeat("*", 7))
 	t.ReportAllocs()
 	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
@@ -101,7 +139,7 @@ func BenchmarkNew14(t *testing.B) {
 }
 
 func BenchmarkNew62(t *testing.B) {
-	s := strings.Repeat("*", 31)
+	s := []byte(strings.Repeat("*", 31))
 	t.ReportAllocs()
 	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
@@ -110,7 +148,7 @@ func BenchmarkNew62(t *testing.B) {
 }
 
 func BenchmarkNew126(t *testing.B) {
-	s := strings.Repeat("*", 63)
+	s := []byte(strings.Repeat("*", 63))
 	t.ReportAllocs()
 	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
@@ -118,7 +156,7 @@ func BenchmarkNew126(t *testing.B) {
 	}
 }
 func BenchmarkNew256(t *testing.B) {
-	s := strings.Repeat("*", 128)
+	s := []byte(strings.Repeat("*", 128))
 	t.ReportAllocs()
 	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
@@ -126,7 +164,7 @@ func BenchmarkNew256(t *testing.B) {
 	}
 }
 func BenchmarkNew1024(t *testing.B) {
-	s := strings.Repeat("*", 512)
+	s := []byte(strings.Repeat("*", 512))
 	t.ReportAllocs()
 	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
@@ -134,7 +172,8 @@ func BenchmarkNew1024(t *testing.B) {
 	}
 }
 func BenchmarkNew0xFFFF(t *testing.B) {
-	s := strings.Repeat("*", 0xFFFF/2)
+	s := []byte(strings.Repeat("*", 0xFFFF/2))
+	t.ReportAllocs()
 	t.ReportAllocs()
 	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
@@ -143,7 +182,7 @@ func BenchmarkNew0xFFFF(t *testing.B) {
 }
 
 func BenchmarkGet62(t *testing.B) {
-	s := strings.Repeat("*", 31)
+	s := []byte(strings.Repeat("*", 31))
 	var pairs []Pair
 	for i := 0; i < t.N; i++ {
 		pairs = append(pairs, New(s, s))
@@ -158,7 +197,7 @@ func BenchmarkGet62(t *testing.B) {
 }
 
 func BenchmarkGet1024(t *testing.B) {
-	s := strings.Repeat("*", 512)
+	s := []byte(strings.Repeat("*", 512))
 	var pairs []Pair
 	for i := 0; i < t.N; i++ {
 		pairs = append(pairs, New(s, s))

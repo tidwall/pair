@@ -13,13 +13,13 @@ $ go get -u github.com/tidwall/pair
 Create a new Pair:
 
 ```go
-item := pair.New("user:2054:name", "Alice Tripplehorn")
+item := pair.New([]byte("user:2054:name"), []byte("Alice Tripplehorn"))
 ```
 
 Access the Pair data:
 ```go
-item.Key() string    // returns the key portion of the pair.
-item.Value() string  // returns the value portion of the pair.
+item.Key() []byte    // returns the key portion of the pair.
+item.Value() []byte  // returns the value portion of the pair.
 item.Size() int      // returns the exact in-memory size of the item.
 ```
 
