@@ -118,25 +118,25 @@ func (pair Pair) get(what int) ([]byte, int) {
 }
 
 // Key returns the key portion of the key
-func (pair *Pair) Key() []byte {
+func (pair Pair) Key() []byte {
 	s, _ := pair.get(key)
 	return s
 }
 
 // Value returns the value
-func (pair *Pair) Value() []byte {
+func (pair Pair) Value() []byte {
 	s, _ := pair.get(value)
 	return s
 }
 
 // Size returns the size of the in-memory allocation
-func (pair *Pair) Size() int {
+func (pair Pair) Size() int {
 	_, i := pair.get(size)
 	return i
 }
 
 // Zero return true if the pair is unallocated
-func (pair *Pair) Zero() bool {
+func (pair Pair) Zero() bool {
 	return uintptr(pair.data) == 0
 }
 

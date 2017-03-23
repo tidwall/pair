@@ -21,6 +21,7 @@ Access the Pair data:
 item.Key() []byte    // returns the key portion of the pair.
 item.Value() []byte  // returns the value portion of the pair.
 item.Size() int      // returns the exact in-memory size of the item.
+item.Zero() bool     // returns true if the pair is unallocated.
 ```
 
 Contact
