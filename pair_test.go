@@ -25,9 +25,6 @@ func expectedSizeForPair(pair Pair) int {
 	key := pair.Key()
 	value := pair.Value()
 	sz := hdrSize(key) + hdrSize(value) + len(key) + len(value)
-	if sz%alignSize != 0 {
-		sz += alignSize - (sz % alignSize)
-	}
 	return sz
 }
 

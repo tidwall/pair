@@ -111,9 +111,6 @@ func (pair Pair) get(what int) ([]byte, int) {
 		return slice, 0
 	}
 	sz := vstart + vsize
-	if sz%alignSize != 0 {
-		sz += alignSize - (sz % alignSize)
-	}
 	return nil, sz
 }
 
@@ -129,10 +126,10 @@ func (pair Pair) Value() []byte {
 	return s
 }
 
-// Size returns the size of the in-memory allocation
+// Size returns the size of the allocation
 func (pair Pair) Size() int {
-	_, i := pair.get(size)
-	return i
+	_, sz := pair.get(size)
+	return sz
 }
 
 // Zero return true if the pair is unallocated
