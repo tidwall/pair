@@ -24,6 +24,12 @@ item.Size() int      // returns the exact in-memory size of the item.
 item.Zero() bool     // returns true if the pair is unallocated.
 ```
 
+Unsafe pointer access:
+```go
+item.Pointer() unsafe.Pointer             // returns the base pointer
+pair.FromPointer(ptr unsafe.Pointer) Pair // returns a Pair with provided base pointer
+```
+
 Contact
 -------
 Josh Baker [@tidwall](http://twitter.com/tidwall)
