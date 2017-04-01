@@ -44,7 +44,7 @@ func TestBasic(t *testing.T) {
 	assert.Equal(t, expectedSizeForPair(item), item.Size())
 	assert.Equal(t, false, item.Zero())
 	assert.Equal(t, true, (Pair{}).Zero())
-	assert.Equal(t, item.data, item.Pointer())
+	assert.Equal(t, item.ptr, item.Pointer())
 }
 
 func TestRandom(t *testing.T) {

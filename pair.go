@@ -8,7 +8,7 @@ import (
 
 // Pair is a tightly packed key/value pair
 type Pair struct {
-	data unsafe.Pointer
+	ptr unsafe.Pointer
 }
 
 // New returns a Pair
@@ -65,11 +65,11 @@ var alignSize = int(unsafe.Sizeof(uintptr(0)))
 var maxInt = int(^uint(0) >> 1)
 
 func (pair Pair) get(what int) ([]byte, int) {
-	if uintptr(pair.data) == 0 {
+	if uintptr(pair.ptr) == 0 {
 		return nil, 0
 	}
 	slice := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{
-		Data: uintptr(pair.data),
+		Data: uintptr(pair.ptr),
 		Len:  maxInt,
 		Cap:  maxInt,
 	}))
@@ -134,7 +134,7 @@ func (pair Pair) Size() int {
 
 // Zero return true if the pair is unallocated
 func (pair Pair) Zero() bool {
-	return uintptr(pair.data) == 0
+	return uintptr(pair.ptr) == 0
 }
 
 //go:linkname mallocgc runtime.mallocgc
@@ -152,5 +152,10 @@ func makenz(count int) []byte {
 
 // Pointer returns the underlying pointer
 func (pair Pair) Pointer() unsafe.Pointer {
-	return pair.data
+	return pair.ptr
+}
+
+// FromPointer returns a pair that uses the memory at the pointer.
+func FromPointer(ptr unsafe.Pointer) Pair {
+	return Pair{ptr}
 }
