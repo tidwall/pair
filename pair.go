@@ -149,3 +149,8 @@ func makenz(count int) []byte {
 		Cap:  count,
 	}))
 }
+
+// Pointer returns the underlying pointer
+func (pair Pair) Pointer() unsafe.Pointer {
+	return pair.data
+}
