@@ -10,21 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func hdrSize(s []byte) int {
-	if len(s) <= 0xFD {
-		return 1
-	} else if len(s) <= 0xFFFF {
-		return 3
-	} else if len(s) <= 0x7FFFFFFF {
-		return 5
-	}
-	panic("out of range")
-}
-
 func expectedSizeForPair(pair Pair) int {
 	key := pair.Key()
 	value := pair.Value()
-	sz := hdrSize(key) + hdrSize(value) + len(key) + len(value)
+	sz := 8 + len(key) + len(value)
 	return sz
 }
 
