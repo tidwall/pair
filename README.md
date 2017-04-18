@@ -2,7 +2,19 @@ Pair
 ====
 <a href="https://godoc.org/github.com/tidwall/pair"><img src="https://img.shields.io/badge/api-reference-blue.svg?style=flat-square" alt="GoDoc"></a>
 
-Pair is a Go package that provides a low memory key/value object that takes up one allocation.
+Pair is a Go package that provides a low memory key/value object that takes up one allocation. It's useful for in-memory key/value stores and data structures where memory space is a concern.
+
+
+Data structure
+--------------
+
+The allocation is a single packed block of bytes with the following format:
+
+| ValueSize uint32 | KeySize uint32 | Value []byte | Key []byte |
+|------------------|----------------|--------------|------------|
+
+Using
+-----
 
 To start using Pair, install Go and run `go get`:
 
